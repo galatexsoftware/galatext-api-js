@@ -1,0 +1,28 @@
+{
+  "name": "galatext-api",
+  "version": "1.0.0",
+  "description": "Official Galatext JavaScript SDK — SMS, WhatsApp, balance, sender IDs, and more",
+  "type": "module",
+  "main": "dist/galatext.cjs.js",
+  "module": "dist/galatext.esm.js",
+  "browser": "dist/galatext.umd.js",
+  "unpkg": "dist/galatext.umd.js",
+  "jsdelivr": "dist/galatext.umd.js",
+  "files": ["dist"],
+  "scripts": {
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["galatext", "sms", "bulk-sms", "messaging", "api", "sdk"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/galatexsoftware/galatext-api-js"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-terser": "^0.4.0",
+    "rollup": "^4.0.0"
+  }
+}
