@@ -93,11 +93,12 @@ class Galatext {
     purchases: () =>
       this._request('GET', '/developer/purchases'),
 
-    buyCredits: (product, quantity = null, amount = null) =>
+    buyCredits: (product, quantity = null, amount = null, callbackUrl = null) =>
       this._request('POST', '/developer/credits/purchase', {
         product,
         ...(quantity !== null ? { quantity } : {}),
         ...(amount !== null ? { amount } : {}),
+        ...(callbackUrl ? { callbackUrl } : {}),
       }),
   };
 

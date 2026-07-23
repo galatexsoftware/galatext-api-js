@@ -1,6 +1,6 @@
 {
   "name": "galatext-api",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Official Galatext JavaScript SDK — SMS, WhatsApp, balance, sender IDs, and more",
   "type": "module",
   "main": "dist/galatext.cjs.js",
