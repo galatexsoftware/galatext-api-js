@@ -93,6 +93,9 @@ class Galatext {
     purchases: () =>
       this._request('GET', '/developer/purchases'),
 
+    verifyPayment: (reference) =>
+      this._request('GET', `/developer/credits/verify/${reference}`),
+
     buyCredits: (product, quantity = null, amount = null, callbackUrl = null) =>
       this._request('POST', '/developer/credits/purchase', {
         product,
