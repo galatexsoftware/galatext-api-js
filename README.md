@@ -52,7 +52,7 @@ const result = await client.sms.send(
   phoneNumber,   // string — recipient phone number
   message,       // string — SMS text
   senderId,      // string — your approved sender ID (default: 'GALATEX')
-  reference?     // string — optional unique reference for tracking
+  { scheduledAt } // object — optional; ISO date to queue instead of sending now
 );
 ```
 
@@ -60,12 +60,16 @@ const result = await client.sms.send(
 
 ```js
 const result = await client.sms.bulk(
-  recipients,    // array — [{ phoneNumber: '+2547...' }, ...]
+  recipients,    // array of phone-number strings, e.g. ['+2547...', '+2547...']
   message,       // string — SMS text
   senderId,      // string — sender ID
-  reference?     // string — optional unique reference
+  { scheduledAt } // object — optional; ISO date to queue instead of sending now
 );
 ```
+
+`recipients` goes on the wire as `string[]`. The `{ phoneNumber }` object form is
+still accepted and unwrapped for you, so older callers keep working — but a bare
+string is the supported shape.
 
 ### Get Sent Messages
 
@@ -170,8 +174,8 @@ const senderIds = await client.senderIds.list();
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `send(phone, message, senderId?, reference?)` | `object` | Send a single SMS |
-| `bulk(recipients[], message, senderId?, reference?)` | `object` | Send bulk SMS |
+| `send(phone, message, senderId?, options?)` | `object` | Send a single SMS |
+| `bulk(recipients[], message, senderId?, options?)` | `object` | Send bulk SMS |
 | `list(skip?, take?)` | `array` | Get sent messages |
 
 ### `client.account`

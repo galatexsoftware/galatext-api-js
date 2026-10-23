@@ -9,6 +9,33 @@ class GalatextError extends Error {
   }
 }
 
+/**
+ * Normalise a recipient into a bare MSISDN string.
+ *
+ * The API's `BulkSmsDto.recipients` is `@IsString({ each: true })` and the
+ * gateway runs `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })`,
+ * so `{ phoneNumber }` objects are rejected with a 400 — and `phoneNumber` is
+ * itself a non-whitelisted key. The object form is accepted here for backwards
+ * compatibility, but a string is always what goes on the wire.
+ */
+function toRecipient(value) {
+  if (typeof value === 'string') return value.trim();
+  if (value && typeof value.phoneNumber === 'string') return value.phoneNumber.trim();
+  throw new GalatextError(
+    'Each recipient must be a phone number string or { phoneNumber }',
+    0,
+    'INVALID_RECIPIENT',
+  );
+}
+
+function toRecipientList(recipients) {
+  const list = Array.isArray(recipients) ? recipients : [recipients];
+  if (list.length === 0) {
+    throw new GalatextError('At least one recipient is required', 0, 'MISSING_RECIPIENTS');
+  }
+  return list.map(toRecipient);
+}
+
 class Galatext {
   constructor(apiKey, options = {}) {
     if (!apiKey) throw new GalatextError('API key is required', 0, 'MISSING_API_KEY');
@@ -42,11 +69,12 @@ class Galatext {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new GalatextError(
-          data.message || data.error || `Request failed with status ${res.status}`,
-          res.status,
-          data.code || 'API_ERROR',
-        );
+        // Nest's ValidationPipe answers with `message` as an array of strings;
+        // join it so callers get a sentence rather than "[object Object]".
+        const message = Array.isArray(data.message)
+          ? data.message.join('; ')
+          : data.message || data.error || `Request failed with status ${res.status}`;
+        throw new GalatextError(message, res.status, data.code || 'API_ERROR');
       }
 
       return data;
@@ -64,20 +92,34 @@ class Galatext {
   // ── SMS ───────────────────────────────────────────────────────────────────
 
   sms = {
-    send: (phoneNumber, message, senderId = 'GALATEX', reference = null) =>
+    /**
+     * Send one SMS.
+     * @param {string} phoneNumber
+     * @param {string} message
+     * @param {string} [senderId]
+     * @param {{ scheduledAt?: string }} [options] ISO date to schedule delivery
+     */
+    send: (phoneNumber, message, senderId = 'GALATEX', options = {}) =>
       this._request('POST', '/sms/send-api', {
-        recipients: [{ phoneNumber }],
+        recipients: [toRecipient(phoneNumber)],
         message,
         senderId,
-        ...(reference ? { reference } : {}),
+        ...(options.scheduledAt ? { scheduledAt: options.scheduledAt } : {}),
       }),
 
-    bulk: (recipients, message, senderId = 'GALATEX', reference = null) =>
+    /**
+     * Send the same message to many recipients.
+     * @param {(string|{phoneNumber: string})[]} recipients
+     * @param {string} message
+     * @param {string} [senderId]
+     * @param {{ scheduledAt?: string }} [options]
+     */
+    bulk: (recipients, message, senderId = 'GALATEX', options = {}) =>
       this._request('POST', '/sms/send-api', {
-        recipients,
+        recipients: toRecipientList(recipients),
         message,
         senderId,
-        ...(reference ? { reference } : {}),
+        ...(options.scheduledAt ? { scheduledAt: options.scheduledAt } : {}),
       }),
 
     list: (skip = 0, take = 20) =>
@@ -94,7 +136,7 @@ class Galatext {
       this._request('GET', '/developer/purchases'),
 
     verifyPayment: (reference) =>
-      this._request('GET', `/developer/credits/verify/${reference}`),
+      this._request('GET', `/developer/credits/verify/${encodeURIComponent(reference)}`),
 
     buyCredits: (product, quantity = null, amount = null, callbackUrl = null) =>
       this._request('POST', '/developer/credits/purchase', {
