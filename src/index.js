@@ -46,7 +46,7 @@ class Galatext {
 
   // ── Internal request helper ───────────────────────────────────────────────
 
-  async _request(method, path, body = null, query = {}) {
+  async _request(method, path, body = null, query = {}, isFormData = false) {
     const url = new URL(`${this.baseURL}${path}`);
     for (const [k, v] of Object.entries(query)) {
       if (v !== undefined && v !== null) url.searchParams.set(k, v);
@@ -58,11 +58,15 @@ class Galatext {
     try {
       const res = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
-        },
-        body: body ? JSON.stringify(body) : undefined,
+        // Never set Content-Type on a FormData body — the runtime has to add
+        // the multipart boundary itself.
+        headers: isFormData
+          ? { 'x-api-key': this.apiKey }
+          : {
+              'Content-Type': 'application/json',
+              'x-api-key': this.apiKey,
+            },
+        body: isFormData ? body : body ? JSON.stringify(body) : undefined,
         signal: controller.signal,
       });
 
@@ -152,6 +156,33 @@ class Galatext {
   senderIds = {
     list: () =>
       this._request('GET', '/developer/senderids'),
+
+    /**
+     * Request a new Sender ID.
+     *
+     * Requires a **paid** `senderid` credit purchase by this same account —
+     * buy one first with `account.buyCredits('senderid', 1)` and pass the
+     * Paystack reference here as `paymentReference`. Without it the API answers
+     * 400, because the KES 10,000 registration fee is not collected by this
+     * call.
+     *
+     * @param {object} body
+     * @param {string} body.name                3–11 alphanumeric characters
+     * @param {string} body.companyName
+     * @param {string} body.contactPerson
+     * @param {string} body.phoneNumber
+     * @param {string} body.email
+     * @param {string} body.paymentReference    Paystack ref for the senderid purchase
+     * @param {string} [body.notes]
+     * @param {File|Blob} [body.registrationDocument]
+     */
+    request: (body) => {
+      const form = new FormData();
+      for (const [key, value] of Object.entries(body)) {
+        if (value !== undefined && value !== null) form.append(key, value);
+      }
+      return this._request('POST', '/developer/senderids/request', form, {}, true);
+    },
   };
 }
 
