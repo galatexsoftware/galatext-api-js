@@ -192,6 +192,26 @@ const senderIds = await client.senderIds.list();
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `list()` | `array` | List registered sender IDs |
+| `request(body)` | `object` | Request a new Sender ID (requires a paid `senderid` purchase) |
+
+```js
+// 1. Pay the KES 10,000 registration fee
+const payment = await client.account.buyCredits('senderid', 1);
+window.location.href = payment.authorizationUrl;
+
+// 2. After Paystack returns, submit the request with that reference
+await client.senderIds.request({
+  name: 'MYBRAND',                 // 3-11 alphanumeric
+  companyName: 'Acme Ltd',
+  contactPerson: 'Jane Doe',
+  phoneNumber: '+254****0000',
+  email: 'jane@acme.co.ke',
+  paymentReference: payment.reference,
+  registrationDocument: file,      // optional File/Blob
+});
+```
+
+`buyCredits` accepts `sms`, `whatsapp`, `airtime`, `ussd` and `senderid`.
 
 ---
 
