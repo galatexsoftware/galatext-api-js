@@ -7,7 +7,7 @@ export default defineConfig({
   input: 'src/index.js',
   output: [
     {
-      file: 'dist/galatext.cjs.js',
+      file: 'dist/galatext.cjs',
       format: 'cjs',
       exports: 'named',
     },
